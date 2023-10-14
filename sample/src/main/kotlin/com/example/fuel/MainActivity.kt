@@ -100,7 +100,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun httpGetCoroutine() {
-        val (request, response, result) = Fuel.get("/get", listOf("userId" to "123")).awaitStringResponseResult()
+        val (request, response, result) = Fuel.get("/get", listOf("userId" to "123"))
+            .awaitStringResponseResult()
         Log.d(TAG, response.toString())
         Log.d(TAG, request.toString())
         update(result)
@@ -116,8 +117,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun httpResponseObject() {
         "https://api.github.com/repos/kittinunf/Fuel/issues/1"
+            //产生一个requst对象
             .httpGet()
+            //针对 Request 封装 curl
             .also { Log.d(TAG, it.cUrlString()) }
+            /**
+             *执行真正的请求
+             *
+             * Issue.Deserializer() 自定义的序列化对象
+             *
+             * 这个序列化对象有点复杂了，没有Retrofit的那么好用
+             *
+             *  Deserializable.kt
+             *
+             *  Request.response  RequestTaskCallbacks
+             *
+             *
+             *  最终是  RequestTaskCallbacks.kt   call()
+             *
+             *
+             *  RequestTask 里面使用的是 HttpClient  ，自己使用的线程池
+             *
+             */
             .responseObject(Issue.Deserializer()) { _, _, result -> update(result) }
     }
 

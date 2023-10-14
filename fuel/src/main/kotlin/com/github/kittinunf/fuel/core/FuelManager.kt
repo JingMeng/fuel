@@ -41,7 +41,8 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
     var keystore: KeyStore? = null
     var socketFactory: SSLSocketFactory by readWriteLazy {
         keystore?.let {
-            val trustFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
+            val trustFactory =
+                TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm())
             trustFactory.init(it)
             val sslContext = SSLContext.getInstance("SSL")
             sslContext.init(null, trustFactory.trustManagers, null)
@@ -64,14 +65,15 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
     }
 
     private val requestInterceptors: MutableList<FoldableRequestInterceptor> =
-            mutableListOf(ParameterEncoder)
+        mutableListOf(ParameterEncoder)
     private val responseInterceptors: MutableList<FoldableResponseInterceptor> =
-            mutableListOf(redirectResponseInterceptor(this))
+        mutableListOf(redirectResponseInterceptor(this))
 
     // callback executionOptions
     var callbackExecutor: Executor by readWriteLazy { createEnvironment().callbackExecutor }
 
     var forceMethods: Boolean = false
+
     /**
      * Make a request using [method] to [path] with [parameters]
      *
@@ -85,12 +87,26 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
      * @return [Request] the request
      */
     override fun request(method: Method, path: String, parameters: Parameters?): Request {
-        val request = request(Encoding(
-            httpMethod = method,
-            urlString = path,
-            baseUrlString = basePath,
-            parameters = if (parameters == null) baseParams else baseParams + parameters
-        ).request)
+        /**
+         *
+         * 就是创建一个基本的 request 对象
+         *
+         *
+         * 为什么比我们之前多考虑了那么多，都是为了考虑什么？
+         */
+        val request: Request = request(
+            Encoding(
+                httpMethod = method,
+                urlString = path,
+                baseUrlString = basePath,
+                parameters = if (parameters == null) baseParams else baseParams + parameters
+            ).request
+        )
+        /**
+         * 又进行了一次过了的操作
+         *
+         * 这层操作为什么不是使用链式表达式的
+         */
         return applyOptions(request)
     }
 
@@ -106,8 +122,9 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
      *
      * @return [Request] the request
      */
-    override fun request(method: Method, convertible: PathStringConvertible, parameters: Parameters?): Request =
-        request(method, convertible.path, parameters)
+    override fun request(
+        method: Method, convertible: PathStringConvertible, parameters: Parameters?
+    ): Request = request(method, convertible.path, parameters)
 
     /**
      * Make a request using from [convertible]
@@ -115,7 +132,8 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
      * @param convertible [RequestConvertible] the instance that can be turned into a [Request]
      * @return [Request] the request
      */
-    override fun request(convertible: RequestConvertible): Request = applyOptions(convertible.request)
+    override fun request(convertible: RequestConvertible): Request =
+        applyOptions(convertible.request)
 
     /**
      * Create a [method] [Request] to [path] with [parameters], which can download to a file
@@ -185,18 +203,26 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
 
     private fun applyOptions(request: Request): Request {
         // Sets base headers ONLY if they are not set
-        val unsetBaseHeaders = request.headers.keys.fold(Headers.from(baseHeaders.orEmpty())) {
-            result, it -> result.remove(it); result
-        }
+        val unsetBaseHeaders =
+            request.headers.keys.fold(Headers.from(baseHeaders.orEmpty())) { result, it ->
+                result.remove(it); result
+            }
 
         return request.header(unsetBaseHeaders).apply {
-            executionOptions = RequestExecutionOptions(
-                client = client,
+            executionOptions = RequestExecutionOptions(client = client,
                 socketFactory = socketFactory,
                 hostnameVerifier = hostnameVerifier,
                 callbackExecutor = callbackExecutor,
-                requestTransformer = requestInterceptors.foldRight({ r: Request -> r }) { f, acc -> f(acc) },
-                responseTransformer = responseInterceptors.foldRight({ _: Request, res: Response -> res }) { f, acc -> f(acc) },
+                requestTransformer = requestInterceptors.foldRight({ r: Request -> r }) { f, acc ->
+                    f(
+                        acc
+                    )
+                },
+                responseTransformer = responseInterceptors.foldRight({ _: Request, res: Response -> res }) { f, acc ->
+                    f(
+                        acc
+                    )
+                },
                 executorService = executorService
             ).also { executor ->
                 executor.timeoutInMillisecond = timeoutInMillisecond
@@ -320,8 +346,9 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
      * @param parameters [Parameters] the optional parameters
      * @return [DownloadRequest] the request (extended for download)
      */
-    override fun download(convertible: PathStringConvertible, method: Method, parameters: Parameters?): DownloadRequest =
-        download(convertible.path, method, parameters)
+    override fun download(
+        convertible: PathStringConvertible, method: Method, parameters: Parameters?
+    ): DownloadRequest = download(convertible.path, method, parameters)
 
     /**
      * Create a [method] [Request] to [PathStringConvertible.path] with [parameters], which can upload blobs and
@@ -332,8 +359,9 @@ class FuelManager : RequestFactory, RequestFactory.Convenience {
      * @param parameters [Parameters] the optional parameters
      * @return [UploadRequest] the request (extended for upload)
      */
-    override fun upload(convertible: PathStringConvertible, method: Method, parameters: Parameters?): UploadRequest =
-        upload(convertible.path, method, parameters)
+    override fun upload(
+        convertible: PathStringConvertible, method: Method, parameters: Parameters?
+    ): UploadRequest = upload(convertible.path, method, parameters)
 
     /**
      * Create a [Method.HEAD] [Request] to [path] with [parameters]
