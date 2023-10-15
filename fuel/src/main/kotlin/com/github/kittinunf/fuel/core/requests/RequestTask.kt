@@ -1,20 +1,24 @@
 package com.github.kittinunf.fuel.core.requests
 
 import com.github.kittinunf.fuel.Fuel
+import com.github.kittinunf.fuel.core.Client
 import com.github.kittinunf.fuel.core.FuelError
 import com.github.kittinunf.fuel.core.HttpException
+import com.github.kittinunf.fuel.core.InterruptCallback
 import com.github.kittinunf.fuel.core.Request
+import com.github.kittinunf.fuel.core.RequestExecutionOptions
 import com.github.kittinunf.fuel.core.Response
 import java.util.concurrent.Callable
 
 private typealias RequestTaskResult = Pair<Request, Response>
+
 /**
  * Synchronous version of [SuspendableRequest]. Turns a [Request] into a [Callable]
  */
 internal class RequestTask(internal val request: Request) : Callable<Response> {
-    private val interruptCallback by lazy { executor.interruptCallback }
-    private val executor by lazy { request.executionOptions }
-    private val client by lazy { executor.client }
+    private val interruptCallback: InterruptCallback by lazy { executor.interruptCallback }
+    private val executor: RequestExecutionOptions by lazy { request.executionOptions }
+    private val client: Client by lazy { executor.client }
 
     private fun prepareRequest(request: Request): Request = executor.requestTransformer(request)
 
@@ -32,7 +36,12 @@ internal class RequestTask(internal val request: Request) : Callable<Response> {
             .mapCatching { transformedResponse ->
                 val valid = executor.responseValidator(transformedResponse)
                 if (valid) transformedResponse
-                else throw FuelError.wrap(HttpException(transformedResponse.statusCode, transformedResponse.responseMessage), transformedResponse)
+                else throw FuelError.wrap(
+                    HttpException(
+                        transformedResponse.statusCode,
+                        transformedResponse.responseMessage
+                    ), transformedResponse
+                )
             }
             .recover { error -> throw FuelError.wrap(error, response) }
             .getOrThrow()
@@ -41,6 +50,7 @@ internal class RequestTask(internal val request: Request) : Callable<Response> {
     @Throws(FuelError::class)
     override fun call(): Response {
         return runCatching { prepareRequest(request) }
+            //主要业务
             .mapCatching { executeRequest(it) }
             .mapCatching { pair ->
                 // Nested runCatching so response can be rebound

@@ -25,8 +25,14 @@ internal class RequestTaskCallbacks(
 ) : Callable<Response> {
     override fun call(): Response {
         Fuel.trace { "[RequestTaskCallbacks] start request task\n\r\t$request" }
+        /**
+         * RequestTask#call
+         *
+         */
         return runCatching { task.call() }
             .mapCatching { it -> it.also { onSuccess(it) } }
-            .getOrElse { error -> FuelError.wrap(error).also { onFailure(it, it.response) }.response }
+            .getOrElse { error ->
+                FuelError.wrap(error).also { onFailure(it, it.response) }.response
+            }
     }
 }

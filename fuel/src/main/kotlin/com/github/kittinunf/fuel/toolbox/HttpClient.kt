@@ -80,6 +80,9 @@ class HttpClient(
         return retrieveResponse(request, connection)
     }
 
+    /**
+     * 具体的实现已经出现了   HttpURLConnection
+     */
     @Throws(IOException::class, InterruptedException::class)
     private fun sendRequest(request: Request, connection: HttpURLConnection) {
         ensureRequestActive(request, connection)

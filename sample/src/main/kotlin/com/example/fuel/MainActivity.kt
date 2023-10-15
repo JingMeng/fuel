@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity() {
             execute()
         }
 
+
         mainClearButton.setOnClickListener {
             mainResultText.text = ""
             mainAuxText.text = ""
@@ -79,17 +80,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun execute() {
+        //basic
         httpGet()
         httpPut()
         httpPost()
         httpPatch()
         httpDelete()
+        // need study
         httpDownload()
         httpUpload()
+        //enhance
         httpBasicAuthentication()
+        /**
+         * 我们传入的
+         *
+         *    response(deserializer, handler)
+         *
+         */
         httpListResponseObject()
+        /**
+         *  我们传入的
+         *    response(deserializer, handler)
+         */
         httpResponseObject()
+        /**
+         * TODO:  等待解析
+         *
+         * 是不是这个，不在乎你返回了是list了还是object呢？
+         *
+         *     response(gsonDeserializer(), handler)
+         */
         httpGsonResponseObject()
+
         httpCancel()
         httpRxSupport()
         httpLiveDataSupport()
@@ -115,9 +137,19 @@ class MainActivity : AppCompatActivity() {
         Handler().postDelayed({ request.cancel() }, 1000)
     }
 
+    /**
+     * 在此处的基础上分析一下到底优化了那些，因为是 HttpURLConnection 请求的话，这个就要对比 volley
+     * 因为 volley 也是针对了 HttpURLConnection 进行了一些列的封装
+     */
     private fun httpResponseObject() {
         "https://api.github.com/repos/kittinunf/Fuel/issues/1"
-            //产生一个requst对象
+            /**
+             *产生一个 Request 对象
+             *
+             * applyOptions 的时候产生的线程池对象  executorService
+             *
+             *  这个地方进行请求的时候说的事异步的
+             */
             .httpGet()
             //针对 Request 封装 curl
             .also { Log.d(TAG, it.cUrlString()) }
@@ -137,6 +169,14 @@ class MainActivity : AppCompatActivity() {
              *
              *
              *  RequestTask 里面使用的是 HttpClient  ，自己使用的线程池
+             *
+             *  也就是  FuelManager#executorService
+             *   1. 不分线程了;都是 newCachedThreadPool 创建的
+             *     不分线程是 rxjava的 io线程和 cpu线程
+             *      不过这个地方那个已经需要区分了，都是 io线程，因为都是网络请求
+             *
+             *      https://www.zhihu.com/question/23212914 系统创建的特点
+             *      针对每种特点执行不同的请求
              *
              */
             .responseObject(Issue.Deserializer()) { _, _, result -> update(result) }

@@ -20,6 +20,11 @@ class CustomClientTest {
         val mockJson = File(currentDir, "mock.json")
 
         FuelManager().apply {
+            /**
+             * 这个是一个默认的click ，做的是mock的作用
+             *
+             * 对比 HttpClient 的实现
+             */
             client = object : Client {
                 override fun executeRequest(request: Request): Response = Response(
                     url = request.url,

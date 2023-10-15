@@ -18,6 +18,7 @@ data class RequestExecutionOptions(
     val client: Client,
     val socketFactory: SSLSocketFactory? = null,
     val hostnameVerifier: HostnameVerifier? = null,
+    //这个地方那个就出现线程池了
     val executorService: ExecutorService,
     val callbackExecutor: Executor,
     val requestTransformer: RequestTransformer,
@@ -51,7 +52,8 @@ data class RequestExecutionOptions(
      */
     fun submit(task: Callable<Response>): Future<Response> = executorService.submit(task)
 
-    val interruptCallback: InterruptCallback = { request -> interruptCallbacks.forEach { it(request) } }
+    val interruptCallback: InterruptCallback =
+        { request -> interruptCallbacks.forEach { it(request) } }
 
     /**
      * Append a response transformer
