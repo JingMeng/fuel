@@ -64,7 +64,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         mainGoButton.setOnClickListener {
-            execute()
+            httpGsonListResponseObject()
+//            execute()
         }
 
 
@@ -72,6 +73,28 @@ class MainActivity : AppCompatActivity() {
             mainResultText.text = ""
             mainAuxText.text = ""
         }
+    }
+
+    private fun httpGsonListResponseObject() {
+//        看一下报错 ---使用单个的获取，在json转义的时候出现问题
+        "https://api.github.com/repos/kittinunf/Fuel/issues"
+            .httpGet()
+            .also { Log.d(TAG, it.cUrlString()) }
+            .responseObject<ArrayList<Issue>> { _, _, result -> update(result) }
+    }
+
+    private fun httpGsonResponseObject2() {
+        "https://api.github.com/repos/kittinunf/Fuel/issues/1"
+            .httpGet()
+            .also { Log.d(TAG, it.cUrlString()) }
+            .responseObject<Issue> { _, _, result -> update(result) }
+    }
+
+    private fun httpListResponseObject2() {
+        "https://api.github.com/repos/kittinunf/Fuel/issues"
+            .httpGet()
+            .also { Log.d(TAG, it.cUrlString()) }
+            .responseObject(Issue.ListDeserializer()) { _, _, result -> update(result) }
     }
 
     override fun onDestroy() {
@@ -189,6 +212,13 @@ class MainActivity : AppCompatActivity() {
             .responseObject(Issue.ListDeserializer()) { _, _, result -> update(result) }
     }
 
+    /**
+     *
+     * gson解析的时候，直接使用的 TypeToken ，这样就简单很多了
+     * inline fun <reified T : Any> gsonDeserializer(gson: Gson = Gson()) = object : ResponseDeserializable<T> {
+     *       override fun deserialize(reader: Reader): T? = gson.fromJson<T>(reader, object : TypeToken<T>() {}.type)
+     *  }
+     */
     private fun httpGsonResponseObject() {
         "https://api.github.com/repos/kittinunf/Fuel/issues/1"
             .httpGet()
