@@ -19,15 +19,22 @@ class DownloadRequest private constructor(private val wrapped: Request) : Reques
     override val request: DownloadRequest = this
     override fun toString() = "Download[\n\r\t$wrapped\n\r]"
 
+    //最终就是初始化了这个对象
     private lateinit var destinationCallback: StreamDestinationCallback
 
     init {
+        //也是复写了 plusAssign 这个参数
         executionOptions += this::transformResponse
     }
 
     @Deprecated("Use fileDestination with (Request, Response) -> File")
     fun destination(destination: LegacyDestinationCallback) =
-        fileDestination { response: Response, request: Request -> destination(response, request.url) }
+        fileDestination { response: Response, request: Request ->
+            destination(
+                response,
+                request.url
+            )
+        }
 
     /**
      * Set the destination callback
@@ -40,8 +47,27 @@ class DownloadRequest private constructor(private val wrapped: Request) : Reques
      * @return [DownloadRequest] self
      */
     fun fileDestination(destination: FileDestinationCallback) =
+        /**
+         * 最外面的传递
+         * typealias FileDestinationCallback = (Response, Request) -> File
+         *
+         * typealias StreamDestinationCallback = (Response, Request) -> Pair<OutputStream, DestinationAsStreamCallback>
+         *     这个是结果
+         *  typealias DestinationAsStreamCallback = () -> InputStream
+         *
+         *  这个 {}的高阶函数，你看不太懂，也就是 DestinationAsStreamCallback的使用
+         */
         streamDestination { response: Response, request: Request ->
-            destination(response, request).let { file -> Pair(FileOutputStream(file), { FileInputStream(file) }) }
+            destination(response, request).let { file ->
+//                Pair(
+//                    FileOutputStream(file),
+//                    { FileInputStream(file) })
+
+                //上面的那种写法不熟悉，后面的这种写法就熟悉了
+                Pair(
+                    FileOutputStream(file)
+                ) { FileInputStream(file) }
+            }
         }
 
     /**

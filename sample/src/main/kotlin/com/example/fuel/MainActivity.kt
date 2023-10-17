@@ -285,9 +285,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun httpDownload() {
+        /**
+         * DownloadRequest 典型的一个，之前的业务不足够了，在重新刨床，重新提供加强
+         *
+         * 包装设计模式，也有 wrapped ，也是继承了 Request
+         */
         val n = 100
         Fuel.download("/bytes/${1024 * n}")
+            //设置参数
             .fileDestination { _, _ -> File(filesDir, "test.tmp") }
+            //设置参数
             .progress { readBytes, totalBytes ->
                 val progress = "$readBytes / $totalBytes"
                 runOnUiThread { mainAuxText.text = progress }

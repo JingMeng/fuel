@@ -62,16 +62,17 @@ class HttpClient(
         throw InterruptedException("[HttpClient] could not ensure Request was active: cancelled=$cancelled")
     }
 
-    override suspend fun awaitRequest(request: Request): Response = suspendCoroutine { continuation ->
-        try {
-            continuation.resume(doRequest(request))
-        } catch (ioe: IOException) {
-            hook.httpExchangeFailed(request, ioe)
-            continuation.resumeWithException(FuelError.wrap(ioe, Response(request.url)))
-        } catch (interrupted: InterruptedException) {
-            continuation.resumeWithException(FuelError.wrap(interrupted, Response(request.url)))
+    override suspend fun awaitRequest(request: Request): Response =
+        suspendCoroutine { continuation ->
+            try {
+                continuation.resume(doRequest(request))
+            } catch (ioe: IOException) {
+                hook.httpExchangeFailed(request, ioe)
+                continuation.resumeWithException(FuelError.wrap(ioe, Response(request.url)))
+            } catch (interrupted: InterruptedException) {
+                continuation.resumeWithException(FuelError.wrap(interrupted, Response(request.url)))
+            }
         }
-    }
 
     @Throws(IOException::class, InterruptedException::class)
     private fun doRequest(request: Request): Response {
@@ -91,8 +92,8 @@ class HttpClient(
             readTimeout = max(request.executionOptions.timeoutReadInMillisecond, 0)
 
             if (this is HttpsURLConnection) {
-            	sslSocketFactory = request.executionOptions.socketFactory
-            	hostnameVerifier = request.executionOptions.hostnameVerifier
+                sslSocketFactory = request.executionOptions.socketFactory
+                hostnameVerifier = request.executionOptions.hostnameVerifier
             }
 
             if (request.executionOptions.forceMethods) {
@@ -155,10 +156,12 @@ class HttpClient(
         hook.postConnect(request)
 
         val headers = Headers.from(connection.headerFields)
-        val transferEncoding = headers[Headers.TRANSFER_ENCODING].flatMap { it.split(',') }.map { it.trim() }
+        val transferEncoding =
+            headers[Headers.TRANSFER_ENCODING].flatMap { it.split(',') }.map { it.trim() }
         val contentEncoding = headers[Headers.CONTENT_ENCODING].lastOrNull()
         var contentLength = headers[Headers.CONTENT_LENGTH].lastOrNull()?.toLong()
-        val shouldDecode = (request.executionOptions.decodeContent ?: decodeContent) && contentEncoding != null && contentEncoding != "identity"
+        val shouldDecode = (request.executionOptions.decodeContent
+            ?: decodeContent) && contentEncoding != null && contentEncoding != "identity"
 
         if (shouldDecode) {
             // `decodeContent` decodes the response, so the final response has no more `Content-Encoding`
@@ -198,11 +201,16 @@ class HttpClient(
             contentLength = -1
         }
 
-        val contentStream = dataStream(request, connection)?.decode(transferEncoding) ?: ByteArrayInputStream(ByteArray(0))
-        val inputStream = if (shouldDecode && contentEncoding != null) contentStream.decode(contentEncoding) else contentStream
+        val contentStream =
+            dataStream(request, connection)?.decode(transferEncoding) ?: ByteArrayInputStream(
+                ByteArray(0)
+            )
+        val inputStream =
+            if (shouldDecode && contentEncoding != null) contentStream.decode(contentEncoding) else contentStream
         val cancellationConnection = WeakReference<HttpURLConnection>(connection)
         val progressStream = ProgressInputStream(
             inputStream, onProgress = { readBytes ->
+                //这个地方那个在底层就是用了这个参数了 ---- 进度条参数
                 request.executionOptions.responseProgress(readBytes, contentLength ?: readBytes)
                 ensureRequestActive(request, cancellationConnection.get())
             }
@@ -262,12 +270,19 @@ class HttpClient(
             // The input and output streams returned by connection are not buffered. In order to give consistent progress
             // reporting, by means of flushing, the output stream here is buffered.
 
-            val totalBytes = if ((contentLength ?: -1L).toLong() > 0) { contentLength!!.toLong() } else { null }
+            val totalBytes = if ((contentLength ?: -1L).toLong() > 0) {
+                contentLength!!.toLong()
+            } else {
+                null
+            }
 
             ProgressOutputStream(
                 connection.outputStream,
                 onProgress = { writtenBytes ->
-                    request.executionOptions.requestProgress(writtenBytes, totalBytes ?: writtenBytes)
+                    request.executionOptions.requestProgress(
+                        writtenBytes,
+                        totalBytes ?: writtenBytes
+                    )
                     ensureRequestActive(request, connection)
                 }
             ).buffered(FuelManager.progressBufferSize)
@@ -285,6 +300,7 @@ class HttpClient(
 
     companion object {
         private val SUPPORTED_DECODING = listOf("gzip", "deflate; q=0.5")
-        private fun coerceMethod(method: Method) = if (method == Method.PATCH) Method.POST else method
+        private fun coerceMethod(method: Method) =
+            if (method == Method.PATCH) Method.POST else method
     }
 }

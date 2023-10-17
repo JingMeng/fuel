@@ -200,7 +200,12 @@ data class DefaultRequest(
      *
      * @return [Request] the request
      */
-    override fun body(openStream: BodySource, calculateLength: BodyLength?, charset: Charset, repeatable: Boolean): Request {
+    override fun body(
+        openStream: BodySource,
+        calculateLength: BodyLength?,
+        charset: Charset,
+        repeatable: Boolean
+    ): Request {
         _body = DefaultBody
             .from(openStream = openStream, calculateLength = calculateLength, charset = charset)
             .let { body -> if (repeatable) body.asRepeatable() else body }
@@ -220,8 +225,18 @@ data class DefaultRequest(
      *
      * @return [Request] the request
      */
-    override fun body(stream: InputStream, calculateLength: BodyLength?, charset: Charset, repeatable: Boolean) =
-        body(openStream = { stream }, calculateLength = calculateLength, charset = charset, repeatable = repeatable)
+    override fun body(
+        stream: InputStream,
+        calculateLength: BodyLength?,
+        charset: Charset,
+        repeatable: Boolean
+    ) =
+        body(
+            openStream = { stream },
+            calculateLength = calculateLength,
+            charset = charset,
+            repeatable = repeatable
+        )
 
     /**
      * Sets the body from a byte array
@@ -231,7 +246,12 @@ data class DefaultRequest(
      * @return [Request] the request
      */
     override fun body(bytes: ByteArray, charset: Charset) =
-        body(stream = ByteArrayInputStream(bytes), calculateLength = { bytes.size.toLong() }, charset = charset, repeatable = true)
+        body(
+            stream = ByteArrayInputStream(bytes),
+            calculateLength = { bytes.size.toLong() },
+            charset = charset,
+            repeatable = true
+        )
 
     /**
      * Sets the body from a string
@@ -244,7 +264,7 @@ data class DefaultRequest(
         body(bytes = body.toByteArray(charset), charset = charset)
             .let {
                 if (header(Headers.CONTENT_TYPE).lastOrNull().isNullOrBlank())
-                header(Headers.CONTENT_TYPE, "text/plain; charset=${charset.name()}")
+                    header(Headers.CONTENT_TYPE, "text/plain; charset=${charset.name()}")
                 else it
             }
 
@@ -306,6 +326,7 @@ data class DefaultRequest(
      * @return self
      */
     override fun responseProgress(handler: ProgressCallback): Request {
+        //responseProgress 这个地方 是 mutableListOf() 类型的，所以可以操作 +=  ，就是对象里面的 plusAssign 操作
         executionOptions.responseProgress += handler
         return request
     }
@@ -474,16 +495,28 @@ data class DefaultRequest(
 
     override fun responseString() = response(StringDeserializer(Charsets.UTF_8))
 
-    override fun <T : Any> responseObject(deserializer: ResponseDeserializable<T>, handler: ResponseResultHandler<T>) =
+    override fun <T : Any> responseObject(
+        deserializer: ResponseDeserializable<T>,
+        handler: ResponseResultHandler<T>
+    ) =
         response(deserializer, handler)
 
-    override fun <T : Any> responseObject(deserializer: ResponseDeserializable<T>, handler: ResultHandler<T>) =
+    override fun <T : Any> responseObject(
+        deserializer: ResponseDeserializable<T>,
+        handler: ResultHandler<T>
+    ) =
         response(deserializer, handler)
 
-    override fun <T : Any> responseObject(deserializer: ResponseDeserializable<T>, handler: ResponseHandler<T>) =
+    override fun <T : Any> responseObject(
+        deserializer: ResponseDeserializable<T>,
+        handler: ResponseHandler<T>
+    ) =
         response(deserializer, handler)
 
-    override fun <T : Any> responseObject(deserializer: ResponseDeserializable<T>, handler: Handler<T>) =
+    override fun <T : Any> responseObject(
+        deserializer: ResponseDeserializable<T>,
+        handler: Handler<T>
+    ) =
         response(deserializer, handler)
 
     override fun <T : Any> responseObject(deserializer: ResponseDeserializable<T>) =
