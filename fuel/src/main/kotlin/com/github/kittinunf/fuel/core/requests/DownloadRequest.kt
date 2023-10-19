@@ -85,8 +85,31 @@ class DownloadRequest private constructor(private val wrapped: Request) : Reques
 
     fun progress(progress: ProgressCallback) = responseProgress(progress)
 
+
+    /**
+     * 这个就是  ResponseTransformer 一个实现
+     *
+     * 在参数化的时候是：
+     *
+     * var responseTransformer: ResponseTransformer
+     */
     private fun transformResponse(request: Request, response: Response): Response {
+        //typealias StreamDestinationCallback = (Response, Request) -> Pair<OutputStream, DestinationAsStreamCallback>
+        //typealias DestinationAsStreamCallback = () -> InputStream
         val (output, inputCallback) = this.destinationCallback(response, request)
+
+        /**
+         *分开看，不要在一起看
+         * outputStream  写出
+         *
+         * inputStream 读入
+         *
+         * FileInputStream 从文件系统中的某个文件中获得输入字节。
+         *
+         * 这个我记得是针对内存而言的读写
+         *
+         * https://blog.csdn.net/lyb1832567496/article/details/52712218
+         */
         output.use { outputStream ->
             response.body.toStream().use { inputStream ->
                 inputStream.copyTo(out = outputStream)
@@ -95,6 +118,17 @@ class DownloadRequest private constructor(private val wrapped: Request) : Reques
 
         // This allows the stream to be written to disk first and then return the written file.
         // We can not calculate the length here because inputCallback might not return the actual output as we write it.
+        /**
+         * 这个body有什么用呢 ？
+         *
+         * 这允许先将流写入磁盘，然后返回写入的文件。
+         *
+         * 我们不能在这里计算长度，因为inputCallback在编写时可能不会返回实际输出。
+         *
+         * inputCallback  还是一个流
+         *
+         * typealias BodySource = (() -> InputStream)
+         */
         return response.copy(body = DefaultBody.from(inputCallback, null))
     }
 

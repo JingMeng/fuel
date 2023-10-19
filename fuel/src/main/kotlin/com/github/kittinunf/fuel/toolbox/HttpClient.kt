@@ -202,15 +202,42 @@ class HttpClient(
         }
 
         val contentStream =
+            /**
+             * dataStream 就是获取流的操作，整个是一个hook的操作，为了下一步的操作
+             * 返回的是  connection.inputStream： InputStream
+             *
+             * decode 是 gzip 等 操作  ，把流重新包裹缓冲了
+             *
+             */
             dataStream(request, connection)?.decode(transferEncoding) ?: ByteArrayInputStream(
                 ByteArray(0)
             )
+
+        /**
+         * 文件下载是一定不可以被解析的，所以这个shouldDecode 应该为false
+         *
+         * 在文件下载这个条件下：
+         *
+         * contentStream 就是  inputStream
+         */
         val inputStream =
             if (shouldDecode && contentEncoding != null) contentStream.decode(contentEncoding) else contentStream
         val cancellationConnection = WeakReference<HttpURLConnection>(connection)
         val progressStream = ProgressInputStream(
             inputStream, onProgress = { readBytes ->
-                //这个地方那个在底层就是用了这个参数了 ---- 进度条参数
+                /**
+                 * 这个地方那个在底层就是用了这个参数了 ---- 进度条参数
+                 *
+                 * contentLength 这个参数我们目前是看到的读取的时候使用的
+                 *
+                 * todo： 去查询一下 上传文件的时候的问题，上传文件的时候我们是否应该告诉一下服务器一声我们的
+                 * contentLength 是不是在那个时间也写入了一次，这样整个逻辑就是完整的了
+                 *
+                 * https://juejin.cn/post/7069407356387328030?searchId=202310180901273D6AFBD998663C6EB36F
+                 *
+                 * 在我的理解上还是加了一个层的操作，这个层的目的就是为了监听进度，让业务隔离了
+                 *
+                 */
                 request.executionOptions.responseProgress(readBytes, contentLength ?: readBytes)
                 ensureRequestActive(request, cancellationConnection.get())
             }
@@ -225,6 +252,11 @@ class HttpClient(
             statusCode = connection.responseCode,
             responseMessage = connection.responseMessage.orEmpty(),
             body = DefaultBody.from(
+                /**
+                 * 每次缓冲数据的数据量大小
+                 * 这个应该就是涉及到文件的读写了
+                 * 文件读写也是需要一个大小的
+                 */
                 { progressStream.buffered(FuelManager.progressBufferSize) },
                 { contentLength ?: -1 }
             )

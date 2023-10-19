@@ -28,6 +28,7 @@ data class RequestExecutionOptions(
     val responseProgress: Progress = Progress()
     var timeoutInMillisecond: Int = 15_000
     var timeoutReadInMillisecond: Int = 15_000
+    //是否需要解析，吧远程的输入流解码，否则还是以流的形式存在
     var decodeContent: Boolean? = null
     var allowRedirects: Boolean? = null
     var useHttpCache: Boolean? = null

@@ -64,8 +64,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         mainGoButton.setOnClickListener {
-            httpGsonListResponseObject()
+//            httpGsonListResponseObject()
 //            execute()
+            /**
+             * Skipped 137 frames!  The application may be doing too much work on its main thread.
+             *
+             * 直接展示了一串乱码内容，这个操作不太好的
+             */
+            httpDownload()
         }
 
 
@@ -304,6 +310,9 @@ class MainActivity : AppCompatActivity() {
             .responseString { _, _, result -> update(result) }
     }
 
+    /**
+     * UploadRequest
+     */
     private fun httpUpload() {
         Fuel.upload("/post")
             .add {
@@ -314,6 +323,9 @@ class MainActivity : AppCompatActivity() {
                         writer.appendln("abcdefghijklmnopqrstuvwxyz")
                     }
                 }
+                /**
+                 * 这个地方 的 FileDataPart 是 带有文件的大小的
+                 */
                 FileDataPart(file)
             }
             .progress { writtenBytes, totalBytes ->
